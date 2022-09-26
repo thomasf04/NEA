@@ -183,10 +183,10 @@ namespace Technical_Solution
             }
 
             int[] plaintext = new int[ciphertext.Length];
-            int[] ModularInverses = new int[] { 1, 0, 9, 0, 21, 0, 15, 0, 3, 0, 19, 0, 0, 0, 7, 0, 23, 0, 11, 0, 5, 0, 17, 0, 25 };
+            int[] ModularInverses = new int[] { 0, 1, 0, 9, 0, 21, 0, 15, 0, 3, 0, 19, 0, 0, 0, 7, 0, 23, 0, 11, 0, 5, 0, 17, 0, 25 };
             int aPrime, bPrime;
 
-            aPrime = ModularInverses[a - 1];
+            aPrime = ModularInverses[a];
             bPrime = 26 - b;
 
             for (int i = 0; i < ciphertext.Length; i++)
@@ -217,55 +217,176 @@ namespace Technical_Solution
             return plaintext;
         }
 
-        //static int[] HillCipherEncrypt(int[] plaintext, Matrix matrix, char nullCharacter)
-        //{
-        //    int[] plaintextPadded = new int[plaintext.Length + matrix.size - (plaintext.Length % matrix.size)];
-        //    int[] ciphertext = new int[plaintextPadded.Length];
-        //    double[] subarray = new double[matrix.size];
-
-        //    for (int i = 0; i < plaintextPadded.Length; i++)
-        //    {
-        //        if (i < plaintext.Length)
-        //        {
-        //            plaintextPadded[i] = plaintext[i];
-        //        }
-        //        else
-        //        {
-        //            plaintextPadded[i] = Integer(nullCharacter);
-        //        }
-        //    }
-
-        //    for (int i = 0; i < plaintextPadded.Length; i+=matrix.size)
-        //    {
-        //        Array.Copy(plaintextPadded, i, subarray, 0, matrix.size);
-        //        Array.Copy(matrix.ModMultitplyVector(subarray), 0, ciphertext, i, matrix.size);
-        //    }
-
-        //    return ciphertext;
-
-        //}
-
-
-        static void MatrixTest()
+        static int[] HillCipherEncrypt(int[] plaintext, SquareMatrix matrix, char nullCharacter)
         {
-            double[,] array = new double[,]{ { 4,2,1 },{ -3,1,0},{ 1,3,1} }; //{ { 2,1,2}, { 1,3,3 }, { 5,6,7 } };
-            SquareMatrix matrix = new SquareMatrix(array);
-            //matrix.PrintMatrix();
-            Matrix inverse = matrix.Inverse();
-            inverse.PrintMatrix();
-  
+            int lengthOfPaddedPlaintext = plaintext.Length;
+            if (plaintext.Length % matrix.size != 0)
+            {
+                lengthOfPaddedPlaintext += matrix.size - (plaintext.Length % matrix.size);
+            }
+
+            int[] plaintextPadded = new int[lengthOfPaddedPlaintext];
+            int[] ciphertext = new int[plaintextPadded.Length];
+            int[] subarray = new int[matrix.size];
+
+            for (int i = 0; i < plaintextPadded.Length; i++)
+            {
+                if (i < plaintext.Length)
+                {
+                    plaintextPadded[i] = plaintext[i];
+                }
+                else
+                {
+                    plaintextPadded[i] = Integer(nullCharacter);
+                }
+            }
+
+            for (int i = 0; i < plaintextPadded.Length; i += matrix.size)
+            {
+                Array.Copy(plaintextPadded, i, subarray, 0, matrix.size);
+                Array.Copy(matrix.ModMultitplyVector(subarray), 0, ciphertext, i, matrix.size);
+            }
+
+            return ciphertext;
+
         }
+
+        static int[] HillCipherDecrypt(int[] ciphertext, SquareMatrix matrix)
+        { 
+            int[] plaintext = HillCipherEncrypt(ciphertext, matrix.Inverse(), 'x');
+            return plaintext;
+        }
+
+        //Key is taken to be number of columns of matrix
+        static int[] ScytaleCipherEncrypt(int[] plaintext, int key, char nullCharacter)
+        {
+            int lengthOfPaddedPlaintext = plaintext.Length;
+            if (plaintext.Length % key != 0)
+            {
+                lengthOfPaddedPlaintext += key - (plaintext.Length % key);
+            }
+
+            int[] ciphertext = new int[lengthOfPaddedPlaintext];
+            int counter = 0;
+
+            //Integer division in outer for loop
+            for (int i = 0; i < ciphertext.Length / key; i++)
+            {
+                for (int j = 0; j < key; j++)
+                {
+                    if (counter < plaintext.Length)
+                    {
+                        ciphertext[ciphertext.Length / key * j + i] = plaintext[counter];
+
+                    }
+                    else
+                    {
+                        ciphertext[ciphertext.Length / key * j + i] = Integer(nullCharacter);
+                    }
+                    counter += 1;
+                }
+            }
+
+            return ciphertext;
+        }
+
+        //Key is taken to be number of columns of matrix
+        static int[] ScytaleCipherDecrypt(int[] ciphertext, int key)
+        {
+            int[] plaintext = ScytaleCipherEncrypt(ciphertext, ciphertext.Length / key, 'x');
+            return plaintext;
+        }
+
+        static (int,bool) UpdateRailFenceRowNumber(int row, int key, bool increasing)
+        {
+            if (increasing)
+            {
+                row += 1;
+                if (row == key)
+                {
+                    increasing = false;
+                    row = key - 2;
+                }
+            }
+            else
+            {
+                row -= 1;
+                if (row == -1)
+                {
+                    increasing = true;
+                    row = 1;
+                }
+            }
+            return (row, increasing);
+        }
+
+        static int[] RailFenceCipherEncrypt(int[] plaintext, int key, int offset)
+        {
+            int[] ciphertext = new int[plaintext.Length];
+            List<int>[] rows = new List<int>[key];
+            int row = 0, counter = 0;
+            bool increasing = true;
+
+            for (int i = 0; i < offset; i++)
+            {
+                (row,increasing) = UpdateRailFenceRowNumber(row, key, increasing);
+            }
+
+            for (int i = 0; i < key; i++)
+            {
+                rows[i] = new List<int>();
+            }
+
+            foreach (int i in plaintext)
+            {
+                rows[row].Add(i);
+                (row, increasing) = UpdateRailFenceRowNumber(row, key, increasing);
+            }
+
+            foreach (List<int> r in rows)
+            {
+                foreach (int i in r)
+                {
+                    ciphertext[counter] = i;
+                    counter += 1;
+                }
+            }
+
+            return ciphertext;
+        }
+
+        static int[] RailFenceCipherDecrypt(int[] ciphertext, int key, int offset)
+        {
+            int[] plaintext = new int[ciphertext.Length];
+            int[] numbers = new int[ciphertext.Length];
+            int[] order = new int[ciphertext.Length];
+
+            for (int i = 0; i < ciphertext.Length; i++)
+            {
+                numbers[i] = i;
+            }
+
+            order = RailFenceCipherEncrypt(numbers, key, offset);
+
+
+            for (int i = 0; i < order.Length; i++)
+            {
+                plaintext[order[i]] = ciphertext[i];
+            }
+
+            return plaintext;
+        }
+
+        static int[] PermutationCipherEncrypt(int[] plaintext, )
 
         static void Main(string[] args)
         {
-            MatrixTest();
             Console.WriteLine("Enter message:");
             string plaintext = Console.ReadLine().ToLower();
-
-          
             int[] plaintextArray = ConvertStringToIntegerArray(plaintext);
-            //string ciphertext = ConvertIntegerArrayToString(HillCipherEncrypt(plaintextArray, new Matrix(new double[,] { { 7,8,11},{ 11,2,8},{ 15,7,4} }),'x'));
-            //Console.WriteLine(ciphertext);
+            int[] ciphertextArray = RailFenceCipherDecrypt(plaintextArray,3,3);
+            string ciphertext = ConvertIntegerArrayToString(ciphertextArray);
+            Console.WriteLine(ciphertext);
 
             Console.ReadKey();
 
