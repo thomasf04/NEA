@@ -1,0 +1,40 @@
+using System;
+namespace Prototype
+{
+    public class Vector
+    {
+        private double[] contents;
+        private double magnitude;
+
+        public Vector(double[] contents)
+        {
+            this.contents = contents;
+            magnitude = SetMagnitude();
+        }
+
+        private double SetMagnitude()
+        {
+            double x = 0;
+            foreach (double item in contents)
+            {
+                x += item * item;
+            }
+            return Math.Sqrt(x);
+        }
+
+        static private double Dot(Vector v1, Vector v2)
+        {
+            double x = 0;
+            for (int i = 0; i < 26; i++)
+            {
+                x += v1.contents[i] * v2.contents[i];
+            }
+            return x;
+        }
+
+        static public double CosineAngle(Vector v1, Vector v2)
+        {
+            return Dot(v1, v2) / (v1.magnitude * v2.magnitude); 
+        }
+    }
+}
