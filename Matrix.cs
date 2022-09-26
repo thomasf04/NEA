@@ -3,26 +3,26 @@ namespace Technical_Solution
 {
     public class Matrix
     {
-        protected internal double[,] elements;
+        protected internal int[,] elements;
         public int rows, columns;
 
         public Matrix(int rows, int columns)
         {
             this.rows = rows;
             this.columns = columns;
-            elements = new double[rows, columns];
+            elements = new int[rows, columns];
         }
 
-        public Matrix(double[,] elements)
+        public Matrix(int[,] elements)
         {
             this.elements = elements;
             rows = elements.GetLength(0);
             columns = elements.GetLength(1);
         }
 
-        public double[] ModMultitplyVector(double[] vector)
+        public int[] ModMultitplyVector(int[] vector)
         {
-            double[] vectorOutput = new double[columns];
+            int[] vectorOutput = new int[columns];
 
             for (int i = 0; i < rows; i++)
             {
@@ -32,6 +32,18 @@ namespace Technical_Solution
                 }
             }
             return vectorOutput;
+        }
+
+        public void SwapRows(int rowA, int rowB)
+        {
+            int temp;
+
+            for (int j = 0; j < columns; j++)
+            {
+                temp = elements[rowA, j];
+                elements[rowA, j] = elements[rowB, j];
+                elements[rowB, j] = temp;
+            }
         }
 
         public void PrintMatrix()
