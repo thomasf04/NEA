@@ -1,0 +1,10 @@
+using System;
+namespace Technical_Solution
+{
+    public class CribNotFoundException : Exception
+    {
+        public CribNotFoundException()
+        {
+        }
+    }
+}
