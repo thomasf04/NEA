@@ -140,6 +140,29 @@ namespace Technical_Solution
             return occurences;
         }
 
+        static List<string> WordDictionary(string filename)
+        {
+            using (StreamReader sr = new StreamReader(filename))
+            {
+                List<string> words = new List<string>();
+
+                string line;
+                while (!sr.EndOfStream && !inFile)
+                {
+                    words.Add(sr.ReadLine());
+                }
+            }
+        }
+
+        static int mod(int a)
+        {
+            if (a < 0)
+            {
+                return a - 26 * (int)(a / 26 - 1);
+            }
+            return a % 26;
+        }
+
         static int[] CaesarCipherEncrypt(int[] plaintext, int shift)
         {
             int[] ciphertext = new int[plaintext.Length];
@@ -158,7 +181,7 @@ namespace Technical_Solution
             return CaesarCipherEncrypt(ciphertext, 26 - shift);
         }
 
-        static SolKey<int> CaesarCipherBreakBruteForce(string ciphertextString, double[] f)
+        static SolKey<int> CaesarCipherBreak_BruteForce(string ciphertextString, double[] f)
         {
             SolKey<int> sk;
             int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
@@ -187,19 +210,70 @@ namespace Technical_Solution
 
             sk.solution = bestSolution;
             sk.key = bestShift;
-            return sk;       
+            return sk;
         }
 
-        static SolKey<int> CaesarCipherBreakCribs(string ciphertextString, string cribString)
+        static SolKey<int> CaesarCipherBreak_Cribs(string ciphertextString, string cribString, double[] f)
         {
             SolKey<int> sk;
             int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
             int[] crib = ConvertStringToIntegerArray(cribString);
+            List<int> possibleShifts= new List<int>();
+            bool validPosition;
+            int currentShift;
+            int i = 0, j = 0;
+            int[] solution, bestSolution;
+            double fitness, bestFitness;
+            int bestShift;
+
+            while (i <= ciphertext.Length - crib.Length) 
+            {
+                j = 0;
+                validPosition = true;
+                currentShift = mod(ciphertext[i] - crib[j]);
+                while (validPosition && j < crib.Length - 1)
+                {
+                    j++;
+                    if (mod(ciphertext[i+j] - crib[j])!= currentShift)
+                    {
+                        validPosition = false;
+                    }
+                }
+                if (validPosition)
+                {
+                    possibleShifts.Add(currentShift);
+                }
+                i++;
+            }
+
+            if (possibleShifts.Count == 0)
+            {
+                throw new CribNotFoundException();
+            }
 
 
+            bestSolution = CaesarCipherDecrypt(ciphertext, possibleShifts[0]);
+            bestFitness = TetragramFitness(bestSolution, f);
+            bestShift = 1;
 
+
+            for (int k = 1; k < possibleShifts.Count; k++)
+            {
+                solution = CaesarCipherDecrypt(ciphertext, possibleShifts[k]);
+                fitness = TetragramFitness(solution, f);
+                Console.WriteLine(fitness);
+                if (fitness > bestFitness)
+                {
+                    bestSolution = solution;
+                    bestFitness = fitness;
+                    bestShift = possibleShifts[k];
+                }
+            }
+
+            sk.solution = bestSolution;
+            sk.key = bestShift;
+            return sk;
         }
-
 
 
         //Mode 1 adds letters alphabetically after last letter of keyword e.g. keywordabcfg...
@@ -243,7 +317,7 @@ namespace Technical_Solution
             List<int> lettersAvailable = new List<int>();
             int[] keyAlphabet = new int[26];
             int lastLetter, currentLetter;
-          
+
 
             for (int i = 0; i < 26; i++)
             {
@@ -263,7 +337,7 @@ namespace Technical_Solution
             {
                 for (int i = keywordNoDuplicates.Length; i < 26; i++)
                 {
-                    keyAlphabet[i] = lettersAvailable[i- keywordNoDuplicates.Length];  
+                    keyAlphabet[i] = lettersAvailable[i - keywordNoDuplicates.Length];
                 }
             }
 
@@ -286,6 +360,10 @@ namespace Technical_Solution
             return keyAlphabet;
         }
 
+        static SolKey<string> KeywordSubstitutionBreak_Dictionary(int[] ciphertext, double[] f)
+
+
+
         static int[] AffineCipherEncrypt(int[] plaintext, int a, int b)
         {
             if (a % 2 == 0 || a % 13 == 0)
@@ -297,7 +375,7 @@ namespace Technical_Solution
 
             for (int i = 0; i < plaintext.Length; i++)
             {
-                ciphertext[i] = (a * plaintext[i] + b) % 26; 
+                ciphertext[i] = (a * plaintext[i] + b) % 26;
             }
             return ciphertext;
         }
@@ -362,7 +440,7 @@ namespace Technical_Solution
         }
 
         static int[] HillCipherDecrypt(int[] ciphertext, SquareMatrix matrix)
-        { 
+        {
             int[] plaintext = HillCipherEncrypt(ciphertext, matrix.Inverse(), 'x');
             return plaintext;
         }
@@ -370,7 +448,7 @@ namespace Technical_Solution
         //Key is taken to be number of columns of matrix
         static int[] ScytaleCipherEncrypt(int[] plaintext, int key, char nullCharacter)
         {
-            int[] ciphertext = new int[LengthOfPaddedPlaintext(plaintext,key)];
+            int[] ciphertext = new int[LengthOfPaddedPlaintext(plaintext, key)];
             int counter = 0;
 
             //Integer division in outer for loop
@@ -401,7 +479,7 @@ namespace Technical_Solution
             return plaintext;
         }
 
-        static (int,bool) UpdateRailFenceRowNumber(int row, int key, bool increasing)
+        static (int, bool) UpdateRailFenceRowNumber(int row, int key, bool increasing)
         {
             if (increasing)
             {
@@ -433,7 +511,7 @@ namespace Technical_Solution
 
             for (int i = 0; i < offset; i++)
             {
-                (row,increasing) = UpdateRailFenceRowNumber(row, key, increasing);
+                (row, increasing) = UpdateRailFenceRowNumber(row, key, increasing);
             }
 
             for (int i = 0; i < key; i++)
@@ -487,7 +565,7 @@ namespace Technical_Solution
             int[] ciphertext = new int[paddedPlaintext.Length];
 
             for (int p = 0; p < pLength; p++)
-                {
+            {
                 for (int i = 0; i < paddedPlaintext.Length / pLength; i++)
                 {
                     ciphertext[i * pLength + permutation[p]] = paddedPlaintext[i * pLength + p];
@@ -500,7 +578,7 @@ namespace Technical_Solution
         {
             int pLength = permutation.Length;
             int[] plaintext = new int[ciphertext.Length];
-   
+
             for (int p = 0; p < pLength; p++)
             {
                 for (int i = 0; i < ciphertext.Length / pLength; i++)
@@ -564,9 +642,9 @@ namespace Technical_Solution
 
             using (BinaryReader br = new BinaryReader(File.Open("LogFrequencies.file", FileMode.OpenOrCreate)))
             {
-                for (int i = 0; i < 26*26*26*26; i++)
+                for (int i = 0; i < 26 * 26 * 26 * 26; i++)
                 {
-                    frequencies[i] = br.ReadDouble();
+                    //frequencies[i] = br.ReadDouble();
                 }
             }
 
@@ -619,7 +697,7 @@ namespace Technical_Solution
 
             if (MonogramFitness(ciphertext) > 0)
             {
-                if (TetragramFitness(ciphertext,logFrequencies) > 0)
+                if (TetragramFitness(ciphertext, logFrequencies) > 0)
                 {
                     //English
                 }
@@ -632,7 +710,7 @@ namespace Technical_Solution
             {
                 if (IndexOfCoincidence(ciphertext) > 0)
                 {
-                    (double,bool) bestWithAffine = BestFitnessWithAffine(ciphertext);
+                    (double, bool) bestWithAffine = BestFitnessWithAffine(ciphertext);
                     if (bestWithAffine.Item1 > 0)
                     {
                         if (bestWithAffine.Item2)
@@ -673,9 +751,9 @@ namespace Technical_Solution
 
         }
 
-        static (double,bool) BestFitnessWithAffine(int[] ciphertext)
+        static (double, bool) BestFitnessWithAffine(int[] ciphertext)
         {
-            return (0,true);
+            return (0, true);
         }
 
         static double BestFitnessWithVigenere(int[] ciphertext)
@@ -727,11 +805,12 @@ namespace Technical_Solution
             double[] f = LogFrequencies();
 
 
-            string ciphertextString = "bwnyjfkzshyntsymfyitjxfgwzyjktwhjfyyfhptsfhnumjwyjcyymfybfxjshwduyjibnymymjhfjxfwhnumjwzxjdtzwyjywflwfrknysjxxkzshyntsytknsiymjgjxyutxxngqjijhwduyntsdtzwkzshyntsxmtzqiwjyzwsymjpjdtwymjuqfnsyjcytwgtymfqxtbwnyjfbwfuujwfwtzsidtzwkzshyntsymfyfhhjuyxfhnumjwyjcyfsiuwnsyxymjuqfnsyjcytwbwnyjxnyytfknqj";
+            string ciphertextString = "xubbejxuhucodqcuyijxecqiqdtyqciuludjuddouqhebt".ToLower();
+            string crib = "old";
             int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
 
-            SolKey<int> solutionShift = CaesarCipherBreakBruteForce(ciphertext, f);
-            Console.WriteLine(ConvertIntegerArrayToString(solutionShift.solution));
+            SolKey<int> sk = CaesarCipherBreak_Cribs(ciphertextString, crib, f);
+            Console.WriteLine(ConvertIntegerArrayToString(sk.solution));
 
             Console.ReadKey();
 
