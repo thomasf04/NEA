@@ -142,16 +142,16 @@ namespace Technical_Solution
 
         static List<string> WordDictionary(string filename)
         {
+            List<string> words = new List<string>();
             using (StreamReader sr = new StreamReader(filename))
             {
-                List<string> words = new List<string>();
-
-                string line;
-                while (!sr.EndOfStream && !inFile)
+                while (!sr.EndOfStream)
                 {
                     words.Add(sr.ReadLine());
                 }
             }
+
+            return words;
         }
 
         static int mod(int a)
@@ -161,6 +161,15 @@ namespace Technical_Solution
                 return a - 26 * (int)(a / 26 - 1);
             }
             return a % 26;
+        }
+
+        static bool Coprime26(int x)
+        {
+            if (x % 2 == 0 || x % 13 == 0)
+            {
+                return false;
+            }
+            return true;
         }
 
         static int[] CaesarCipherEncrypt(int[] plaintext, int shift)
@@ -185,21 +194,16 @@ namespace Technical_Solution
         {
             SolKey<int> sk;
             int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
-            int[] solution, bestSolution;
+            int[] solution, bestSolution = new int[ciphertext.Length];
             double fitness, bestFitness;
-            int bestShift;
+            int bestShift = 0;
 
-
-            bestSolution = CaesarCipherDecrypt(ciphertext, 1);
-            bestFitness = TetragramFitness(bestSolution, f);
-            bestShift = 1;
-
-
-            for (int i = 2; i < 26; i++)
+            bestFitness = TetragramFitness(ciphertext, f);
+  
+            for (int i = 1; i < 26; i++)
             {
                 solution = CaesarCipherDecrypt(ciphertext, i);
                 fitness = TetragramFitness(solution, f);
-                Console.WriteLine(fitness);
                 if (fitness > bestFitness)
                 {
                     bestSolution = solution;
@@ -218,7 +222,7 @@ namespace Technical_Solution
             SolKey<int> sk;
             int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
             int[] crib = ConvertStringToIntegerArray(cribString);
-            List<int> possibleShifts= new List<int>();
+            List<int> possibleShifts = new List<int>();
             bool validPosition;
             int currentShift;
             int i = 0, j = 0;
@@ -226,7 +230,7 @@ namespace Technical_Solution
             double fitness, bestFitness;
             int bestShift;
 
-            while (i <= ciphertext.Length - crib.Length) 
+            while (i <= ciphertext.Length - crib.Length)
             {
                 j = 0;
                 validPosition = true;
@@ -234,7 +238,7 @@ namespace Technical_Solution
                 while (validPosition && j < crib.Length - 1)
                 {
                     j++;
-                    if (mod(ciphertext[i+j] - crib[j])!= currentShift)
+                    if (mod(ciphertext[i + j] - crib[j]) != currentShift)
                     {
                         validPosition = false;
                     }
@@ -360,13 +364,45 @@ namespace Technical_Solution
             return keyAlphabet;
         }
 
-        static SolKey<string> KeywordSubstitutionBreak_Dictionary(int[] ciphertext, double[] f)
+        static SolKey<string> KeywordSubstitutionBreak_Dictionary(string ciphertextString, double[] f)
+        {
+            SolKey<string> sk;
+            List<string> words = WordDictionary("words.txt");
+            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
+            int[] solution, bestSolution = new int[ciphertext.Length];
+            double fitness, bestFitness;
+            string bestWord = "";
+
+
+            bestFitness = TetragramFitness(ciphertext, f);
+            for (int mode = 1; mode <= 2; mode++)
+            {
+                foreach (string word in words)
+                {
+
+                    solution = KeywordSubstitutionCipherDecrypt(ciphertext, word, mode);
+                    fitness = TetragramFitness(solution, f);
+          
+                    if (fitness > bestFitness)
+                    {
+                        bestSolution = solution;
+                        bestFitness = fitness;
+                        bestWord = word;
+                    }
+                }
+            }
+
+
+            sk.solution = bestSolution;
+            sk.key = bestWord;
+            return sk;
+        }
 
 
 
         static int[] AffineCipherEncrypt(int[] plaintext, int a, int b)
         {
-            if (a % 2 == 0 || a % 13 == 0)
+            if (!Coprime26(a))
             {
                 throw new InvalidAffineCipherKeyException(a);
             }
@@ -382,7 +418,7 @@ namespace Technical_Solution
 
         static int[] AffineCipherDecrypt(int[] ciphertext, int a, int b)
         {
-            if (a % 2 == 0 || a % 13 == 0)
+            if (!Coprime26(a))
             {
                 throw new InvalidAffineCipherKeyException(a);
             }
@@ -401,6 +437,140 @@ namespace Technical_Solution
 
             return plaintext;
         }
+
+
+        static SolKey<(int,int)> AffineCipherBreak_BruteForce(string ciphertextString, double[] f)
+        {
+            SolKey<(int,int)> sk;
+            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
+            int[] solution, bestSolution = new int[ciphertext.Length];
+            double fitness, bestFitness;
+            (int, int) bestKey = (0, 0);
+            int[] validA = { 1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25 };
+
+
+            bestFitness = TetragramFitness(ciphertext, f);
+
+            foreach (int a in validA)
+            {
+                for (int b = 0; b < 25; b++)
+                {
+                    solution = AffineCipherDecrypt(ciphertext, a, b);
+                    fitness = TetragramFitness(solution, f);
+                    if (fitness > bestFitness)
+                    {
+                        bestSolution = solution;
+                        bestFitness = fitness;
+                        bestKey = (a,b);
+                    }
+                }
+            }
+
+            sk.solution = bestSolution;
+            sk.key = bestKey;
+            return sk;
+        }
+
+        static (bool,int,int) CheckValidAffineCribPosition(int[] ciphertext, int[] crib, int i)
+        {
+            int j = 0, k = 0, x = 0, a = 0, b;
+            bool validSubtraction = false;
+            int[] ModularInverses = new int[] { 0, 1, 0, 9, 0, 21, 0, 15, 0, 3, 0, 19, 0, 0, 0, 7, 0, 23, 0, 11, 0, 5, 0, 17, 0, 25 };
+            int[] ciphertextSplit = new int[crib.Length];
+            Array.Copy(ciphertext, i, ciphertextSplit, 0, crib.Length);
+
+
+            //Coefficient under substraction must be coprime with 26
+            while (j < crib.Length - 1 && !validSubtraction)
+            {
+                k = j + 1;
+                while (k < crib.Length && !validSubtraction)
+                {
+                    if (crib[k] > crib[j])
+                    {
+                        x = crib[k] - crib[j];
+                        a = ciphertextSplit[k] - ciphertextSplit[j];
+                    }
+                    else
+                    {
+                        x = crib[j] - crib[k];
+                        a = ciphertextSplit[j] - ciphertextSplit[k];
+                    }
+                    if (Coprime26(x) && Coprime26(a))
+                    {
+                        validSubtraction = true;
+                    }
+                    k++;
+                }
+                j++;
+            }
+
+            if (!validSubtraction)
+            {
+                return (false,0,0);
+            }
+
+            a = mod(ModularInverses[x] * a);
+            b = mod(ciphertext[i] - crib[0] * a);
+
+            if (Enumerable.SequenceEqual(AffineCipherEncrypt(crib, a, b), ciphertextSplit))
+            {
+                return (true,a,b);
+            }
+            return (false,0,0);
+        }
+
+
+        static SolKey<(int,int)> AffineCipherBreak_Cribs(string ciphertextString, string cribString, double[] f)
+        {
+            SolKey<(int,int)> sk;
+            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
+            int[] crib = ConvertStringToIntegerArray(cribString);
+            List<(int,int)> possibleKeys = new List<(int,int)>();
+            (bool,int,int) validPosition;
+            int[] solution, bestSolution = new int[ciphertext.Length];
+            double fitness, bestFitness;
+            (int,int) bestKey = (0,0);
+
+            for (int i = 0; i < ciphertext.Length - crib.Length; i++)
+            {
+
+                validPosition = CheckValidAffineCribPosition(ciphertext, crib, i);
+                if (validPosition.Item1 == true)
+                {
+                    possibleKeys.Add((validPosition.Item2,validPosition.Item3));
+                }
+       
+            }
+
+            if (possibleKeys.Count == 0)
+            {
+                throw new CribNotFoundException();
+            }
+
+
+            bestFitness = TetragramFitness(ciphertext, f);
+      
+
+            foreach ((int,int) key in possibleKeys)
+            {
+                solution = AffineCipherDecrypt(ciphertext, key.Item1, key.Item2);
+                fitness = TetragramFitness(solution, f);
+                if (fitness > bestFitness)
+                {
+                    bestSolution = solution;
+                    bestFitness = fitness;
+                    bestKey = key;
+                }
+            }
+
+            sk.solution = bestSolution;
+            sk.key = bestKey;
+            return sk;
+        }
+
+
+
 
         static int[] VigenereCipherEncrypt(int[] plaintext, string key)
         {
@@ -644,7 +814,7 @@ namespace Technical_Solution
             {
                 for (int i = 0; i < 26 * 26 * 26 * 26; i++)
                 {
-                    //frequencies[i] = br.ReadDouble();
+                    frequencies[i] = br.ReadDouble();
                 }
             }
 
@@ -805,13 +975,14 @@ namespace Technical_Solution
             double[] f = LogFrequencies();
 
 
-            string ciphertextString = "xubbejxuhucodqcuyijxecqiqdtyqciuludjuddouqhebt".ToLower();
-            string crib = "old";
+            string ciphertextString = "bzsynrefsaqybzsnkwanbzkngydbyjyqbjynsbzssansxsnbrkgsbzkqiymrhlswyxkhbzs".ToLower();
+            string cribString = "the";
             int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
 
-            SolKey<int> sk = CaesarCipherBreak_Cribs(ciphertextString, crib, f);
+            int[] crib = ConvertStringToIntegerArray(cribString);
+            SolKey<(int, int)> sk = AffineCipherBreak_Cribs(ciphertextString, cribString, f);
             Console.WriteLine(ConvertIntegerArrayToString(sk.solution));
-
+     
             Console.ReadKey();
 
         }
