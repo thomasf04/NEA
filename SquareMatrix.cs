@@ -24,6 +24,8 @@ namespace Technical_Solution
             size = elements.GetLength(0);
         }
 
+ 
+
         public SquareMatrix Inverse()
         {
             Matrix augMatrix = new Matrix(size, 2 * size);
@@ -49,7 +51,7 @@ namespace Technical_Solution
                 {
                     x = augMatrix.elements[newK, k];
                     newK += 1;
-                } while (x % 2 == 0 || x % 13 == 0);
+                } while ((x % 2 == 0 || x % 13 == 0) && newK < size);
 
                 augMatrix.SwapRows(k, newK-1);
             }
@@ -69,6 +71,7 @@ namespace Technical_Solution
             {
                 augMatrix.elements[i, i + size] = 1;
             }
+
 
             //Into echelon form
             for (int k = 0; k < size; k++)
@@ -95,10 +98,11 @@ namespace Technical_Solution
                     x = augMatrix.elements[i, k];
                     for (int j = 0; j < 2 * size; j++)
                     {
-                        augMatrix.elements[i, j] -= x * augMatrix.elements[k, j];
+                        augMatrix.elements[i, j] -= mod(x * augMatrix.elements[k, j]);
                     }
                 }
             }
+
             //Back substitution
             for (int k = 0; k < size; k++)
             {
@@ -123,6 +127,43 @@ namespace Technical_Solution
 
 
             return inverseMatrix;
+        }
+
+        public bool IsInvertible()
+        {
+            int det = 0;
+
+            if (size == 2)
+            {
+                det = elements[0, 0] * elements[1, 1] - elements[0, 1] * elements[1, 0];
+            }
+            if (size == 3)
+            {
+                det = 0;
+                for (int i = 0; i < 3; i++)
+                {
+                    det = det + (elements[0, i] * (elements[1, (i + 1) % 3] * elements[2, (i + 2) % 3] - elements[1, (i + 2) % 3] * elements[2, (i + 1) % 3]));
+                }
+            }
+            if (size == 2 || size == 3)
+            {
+                if (det % 2 == 0 || det % 13 == 0)
+                {
+                    return false;
+                }
+                return true;
+            }
+
+
+            try
+            {
+                Inverse();
+            }
+            catch (ZeroDeterminantException)
+            {
+                return false;
+            }
+            return true;
         }
 
 
