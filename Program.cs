@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Diagnostics;
 
 namespace Technical_Solution
 {
@@ -131,7 +132,6 @@ namespace Technical_Solution
                 if (x == 0)
                 {
                     occurences.Add(i);
-                    Console.WriteLine(i);
                 }
 
                 i += table[text[i + x]];
@@ -171,6 +171,130 @@ namespace Technical_Solution
             }
             return true;
         }
+
+        static int GreatestCommonDivisor(int m, int n)
+        {
+            while (n != 0)
+            {
+                m = m % n;
+                (m, n) = (n, m);
+            }
+            return m;
+        }
+
+        static int Menu(string prompt, string[] options)
+        {
+            Console.WriteLine(prompt);
+            int offset = Console.CursorTop - 1;
+            foreach (string option in options)
+            {
+                Console.WriteLine($"  {option}");
+            }
+            int optionNumber = 1;
+
+            while (true)
+            {
+                Console.CursorTop = offset + optionNumber;
+                Console.CursorLeft = 0;
+                Console.Write(">");
+
+                ConsoleKeyInfo choice = Console.ReadKey(true);
+                Console.CursorTop = offset + optionNumber;
+                Console.CursorLeft = 0;
+                Console.Write(" ");
+                if (choice.Key == ConsoleKey.DownArrow && optionNumber < options.Length)
+                {
+                    optionNumber++;
+                }
+                else if (choice.Key == ConsoleKey.UpArrow && optionNumber > 1)
+                {
+                    optionNumber--;
+                }
+                else if (choice.Key == ConsoleKey.Enter)
+                {
+                    Console.CursorTop = offset + options.Length + 1;
+                    return optionNumber - 1;
+                }
+            }
+        }
+
+        static T[][] GenerateCombinations<T>(T[] array, int l)
+        {
+            int cLength = (int)Math.Pow(array.Length, l);
+            T[][] combinations = new T[cLength][];
+            T[][] subCombinations;
+            int counter = 0;
+
+
+            if (l == 1)
+            {
+                for (int i = 0; i < array.Length; i++)
+                {
+                    combinations[i] = new T[] { array[i] };
+                }
+                return combinations;
+            }
+
+            subCombinations = GenerateCombinations(array, l - 1);
+            foreach (T[] combination in subCombinations)
+            {
+                foreach (T element in array)
+                {
+                    combinations[counter] = combination.Concat(new T[] { element }).ToArray();
+                    counter++;
+                }
+            }
+
+            return combinations;
+        }
+
+        static int[] ConvertBaseN(int x, int n, int length)
+        {
+            int[] array = new int[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                array[length - i - 1] = x % n;
+                x = x / n;
+            }
+
+            return array;
+        }
+
+        static int[] ConvertBaseN(int x, int n)
+        {
+            int length;
+            if (x == 0)
+            {
+                length = 1;
+            }
+            else
+            {
+                length = (int)Math.Log(x, n) + 1;
+
+            }
+            return ConvertBaseN(x, n, length);
+        }
+
+        static int[,] Convert1DArrayToSquareArray(int[] array, int size)
+        {
+            if (array.Length != size * size)
+            {
+                throw new ArgumentException();
+            }
+
+            int[,] squareArray = new int[size, size];
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                squareArray[i / size, i % size] = array[i];
+            }
+
+            return squareArray;
+
+        }
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static int[] CaesarCipherEncrypt(int[] plaintext, int shift)
         {
@@ -279,6 +403,7 @@ namespace Technical_Solution
             return sk;
         }
 
+        //--------------------------------------------------------------------------------------------------------------------------------------------
 
         //Mode 1 adds letters alphabetically after last letter of keyword e.g. keywordabcfg...
         //Mode 2 adds letters alphabetically starting with last letter of key word e.g. keywordefghi...
@@ -398,7 +523,7 @@ namespace Technical_Solution
             return sk;
         }
 
-
+        //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static int[] AffineCipherEncrypt(int[] plaintext, int a, int b)
         {
@@ -437,7 +562,6 @@ namespace Technical_Solution
 
             return plaintext;
         }
-
 
         static SolKey<(int,int)> AffineCipherBreak_BruteForce(string ciphertextString, double[] f)
         {
@@ -570,7 +694,7 @@ namespace Technical_Solution
         }
 
 
-
+        //VIGENERE--------------------------------------------------------------------------------------------------------------------------------------------
 
         static int[] VigenereCipherEncrypt(int[] plaintext, string key)
         {
@@ -592,6 +716,261 @@ namespace Technical_Solution
             return plaintext;
         }
 
+        static int VigenereKeyLength_KasiskiExamination(int[] ciphertext, List<int[]> repeatedSequences)
+        {
+            int keyLength = 0;
+            List<int>[] allOccurences = new List<int>[repeatedSequences.Count];
+            int[] firstDifferences = new int[repeatedSequences.Count];
+            List<int> occurences = new List<int>();
+
+            for (int i = 0; i < repeatedSequences.Count; i++)
+            {
+                occurences = BoyerMooreHorspool(ciphertext, repeatedSequences[i]);
+                allOccurences[i] = occurences;
+            }
+
+            for (int i = 0; i < repeatedSequences.Count; i++)
+            {
+                if (allOccurences[i].Count >= 2)
+                {
+                    firstDifferences[i] = allOccurences[i][1] - allOccurences[i][0];
+                }
+                else
+                {
+                    firstDifferences[i] = 0;
+                }
+            }
+
+            foreach (int difference in firstDifferences)
+            {
+                keyLength = GreatestCommonDivisor(keyLength, difference);
+            }
+
+            return keyLength;
+        }
+
+        //IoC stands for "Index of Coincidence"
+        static int VigenereKeyLength_IoC(int[] ciphertext)
+        {
+            int[][] slices;
+            double totalIoC, averageIoC;
+
+            for (int period = 2; period <= 20; period++)
+            {
+                totalIoC = 0;
+                slices = SlicePeriodically(ciphertext, period);
+                for (int i = 0; i < period; i++)
+                {
+                    totalIoC += IndexOfCoincidence(slices[i]);
+                }
+                averageIoC = totalIoC / period;
+                if (averageIoC > 1.7)
+                {
+                    return period;
+                }   
+            }
+            return 0;
+        }
+
+        static T[][] SlicePeriodically<T>(T[] array, int period)
+        {
+            T[][] slices = new T[period][];
+            int i, index;
+
+            for (int j = 0; j < period; j++)
+            {
+                index = 0;
+                i = j;
+                slices[j] = new T[(array.Length - j - 1) / period + 1];
+                while (i < array.Length)
+                {
+                    slices[j][index] = array[i];
+                    i += period;
+                    index += 1;
+                }
+            }
+            return slices;
+        }
+
+        //Subtracts at each position sequentially
+        static SolKey<string> VigenereCipherBreak_Crib1(int[] ciphertext, string cribString)
+        {
+            SolKey<string> sk;
+
+            if (cribString.Length < 4)
+            {
+                throw new ArgumentOutOfRangeException("crib.Length");
+            }
+
+            string ciphertextString = ConvertIntegerArrayToString(ciphertext);
+            int[] crib = ConvertStringToIntegerArray(cribString);
+            int n = 100;
+            
+            //WHAT IF CRIB IS ON BOUNDARY?
+            string key = VigenereBreak_CribSearching(ciphertext, ciphertextString, n, crib, cribString);
+
+            sk.key = key;
+            sk.solution = VigenereCipherDecrypt(ciphertext, key);
+            return sk;
+        }
+
+        static string VigenereBreak_CribSearching(int[] ciphertext, string ciphertextString, int n, int[] crib, string cribString)
+        {
+            Console.CursorLeft = 0;
+            Console.CursorTop = 0;
+            Console.Clear();
+            int[] slice, sliceDecrypted;
+            int i = 0, offset = 0;
+   
+            bool exit = false;
+
+            Console.WriteLine("Use the arrow keys to subtract the crib from different positions.");
+            Console.WriteLine("Press enter when you would like to propose a key.");
+            do
+            {
+                Console.CursorLeft = 0;
+                Console.CursorTop = 2;
+                Console.WriteLine(ciphertextString.Substring(offset, n));
+                Console.Write(new string(' ', n));
+                Console.CursorLeft = i;
+
+                slice = new ArraySegment<int>(ciphertext, offset + i, crib.Length).ToArray();
+                sliceDecrypted = VigenereCipherDecrypt(slice, cribString);
+                Console.Write(ConvertIntegerArrayToString(sliceDecrypted));
+
+                ConsoleKeyInfo choice = Console.ReadKey(true);
+                if (choice.Key == ConsoleKey.RightArrow)
+                {
+                    if (i < n - crib.Length)
+                    {
+                        i++;
+                    }
+                    else
+                    {
+                        if (offset + i < ciphertext.Length - crib.Length)
+                        {
+                            offset += 1;
+                        }
+                    }
+
+                }
+                if (choice.Key == ConsoleKey.LeftArrow)
+                {
+                    if (i > 0)
+                    {
+                        if (offset > 0)
+                        {
+                            offset -= 1;
+                        }
+                        else
+                        {
+                            i--;
+                        }
+                    }
+                }
+                if (choice.Key == ConsoleKey.Enter)
+                { 
+                    exit = true;
+                   
+                }
+
+            } while (!exit);
+
+            Console.WriteLine("\nWhat do you think the key is?");
+            string key = Console.ReadLine();
+            return key;
+
+        }
+
+        //Subtracts at each position and orders by tetragram fitness
+        static SolKey<string> VigenereCipherBreak_Crib2(int[] ciphertext, string cribString, double[] f)
+        {
+            if (cribString.Length < 4)
+            {
+                throw new ArgumentOutOfRangeException("crib.Length");
+            }
+
+            SolKey<string> sk;
+            int[] crib = ConvertStringToIntegerArray(cribString);
+            int[] slice, sliceDecrypted;
+            string sliceString, key;
+            double normalisedFitness;
+            Dictionary<int[], double> dictionary = new Dictionary<int[], double>();
+            List<KeyValuePair<int[], double>> orderedList;
+           
+
+            for (int i = 0; i <= ciphertext.Length - crib.Length; i++)
+            {
+                slice = new ArraySegment<int>(ciphertext, i, crib.Length).ToArray();
+                sliceDecrypted = VigenereCipherDecrypt(slice, cribString);
+                dictionary.Add(sliceDecrypted, TetragramFitness(sliceDecrypted, f));
+            }
+
+            orderedList = dictionary.OrderByDescending(x => x.Value).ToList();
+
+            Console.WriteLine("Here are the top 20 possible keys:");
+            Console.WriteLine("NOTE: It is possible that only part of the key is uncovered and the key may be shifted to the left of right.");
+            for (int i = 0; i < 20; i++)
+            {
+                sliceString = ConvertIntegerArrayToString(orderedList[i].Key);
+                normalisedFitness = NormaliseTetragramFitness(orderedList[i].Value);
+                Console.WriteLine($"{i+1}: {sliceString} ({normalisedFitness})");
+            }
+
+            Console.WriteLine("\nWhat do you believe to be the key?");
+            key = Console.ReadLine();
+            sk.key = key;
+            sk.solution = VigenereCipherDecrypt(ciphertext, key);
+
+            return sk;
+        }
+
+        static SolKey<string> VigenereCipherBreak_Variational(int[] ciphertext, int period, double[] f)
+        {
+            SolKey<string> sk;
+            int[] plaintext = new int[ciphertext.Length];
+            Random rnd = new Random();
+            int[] keyArray = new int[period];
+            int[] newKeyArray = new int[period];
+            string key, newKey;
+            int x;
+            double fitness = -10;
+            double newFitness;
+
+            for (int i = 0; i < period; i++)
+            {
+                keyArray[i] = 0;
+            }
+
+            while (fitness < -4.5655)
+            {
+                Array.Copy(keyArray, newKeyArray, period);
+                x = rnd.Next(period);
+
+                for (int i = 0; i < 26; i++)
+                {
+                    newKeyArray[x] = i;
+                    newKey = ConvertIntegerArrayToString(newKeyArray);
+                    plaintext = VigenereCipherDecrypt(ciphertext, newKey);
+                    newFitness = TetragramFitness(plaintext, f);
+
+                    if (newFitness > fitness)
+                    {
+                        Array.Copy(newKeyArray, keyArray, period);
+                        fitness = newFitness;
+                    }
+                }
+
+            }
+            
+            sk.key = ConvertIntegerArrayToString(keyArray);
+            sk.solution = VigenereCipherDecrypt(ciphertext, sk.key);
+            return sk;
+
+        }
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------
+
         static int[] HillCipherEncrypt(int[] plaintext, SquareMatrix matrix, char nullCharacter)
         {
             int[] plaintextPadded = PadPlaintext(plaintext, matrix.size, nullCharacter);
@@ -608,12 +987,130 @@ namespace Technical_Solution
             return ciphertext;
 
         }
-
+    
         static int[] HillCipherDecrypt(int[] ciphertext, SquareMatrix matrix)
         {
             int[] plaintext = HillCipherEncrypt(ciphertext, matrix.Inverse(), 'x');
             return plaintext;
         }
+
+        static int HillCipherDimensions(int[] ciphertext)
+        {
+            int[][] slices;
+            int blocksize;
+            double totalIoC, averageIoC;
+            double[] averageIoCs = new double[20];
+
+            for (int period = 1; period <= 20; period++)
+            {
+                totalIoC = 0;
+                slices = SlicePeriodically(ciphertext, period);
+                for (int i = 0; i < period; i++)
+                {
+                    totalIoC += IndexOfCoincidence(slices[i]);
+                }
+                averageIoC = totalIoC / period;
+                averageIoCs[period - 1] = averageIoC;
+            }
+
+            for (int period = 1; period <= 20; period++)
+            {
+                Console.Write($"{period}:".PadLeft(3));
+                Print_IoC_Bar(averageIoCs[period - 1]);
+            }
+
+            Console.WriteLine("Displayed above is a bar chart to represent the Index of Coincidence of slices taken from the ciphertext with different periods.");
+            Console.WriteLine("Slices taken at multiples of the block-size will score higher than ones taken at other places.");
+            Console.WriteLine("What do you believe to be the block-size?");
+
+            blocksize = int.Parse(Console.ReadLine());
+
+            return blocksize;
+
+        }
+
+        static void Print_IoC_Bar(double ioc)
+        {
+            int normIoC = NormaliseIndexOfCoincidence(ioc);
+            for (int i = 0; i < normIoC; i++)
+            {
+                Console.Write('-');
+            }
+            Console.WriteLine();
+        }
+
+        static SolKey<SquareMatrix> HillCipherBreak_BruteForceV3(int[] ciphertext, int blocksize, double[] f)
+        {
+            SolKey<SquareMatrix> sk;
+            SquareMatrix matrix, bestMatrix = new SquareMatrix(1);
+            int[] array, solution = new int[1];
+            int[] alphabet = new int[26];
+            int[,] squareArray;
+            double fitness;
+            double bestFitness = -10;
+
+            for (int i = 0; i < Math.Pow(26, blocksize * blocksize); i++)
+            {
+                array = ConvertBaseN(i, 26, blocksize * blocksize);
+                squareArray = Convert1DArrayToSquareArray(array, blocksize);
+                matrix = new SquareMatrix(squareArray);
+
+                if (matrix.IsInvertible())
+                {
+                    solution = HillCipherEncrypt(ciphertext, matrix, 'x');
+                    fitness = TetragramFitness(solution, f);
+                    if (fitness > bestFitness)
+                    {
+                        bestMatrix = matrix;
+                        bestFitness = fitness;
+                    }
+                }
+
+            }
+
+            Console.WriteLine(bestFitness);
+            sk.key = bestMatrix;
+            sk.solution = HillCipherEncrypt(ciphertext, bestMatrix, 'x');
+            return sk;
+        }
+
+        static SolKey<SquareMatrix> HillCipherBreak_BruteForceV2(int[] ciphertext, int blocksize, double[] f)
+        {
+            SolKey<SquareMatrix> sk;
+            SquareMatrix matrix, bestMatrix = new SquareMatrix(1);
+            int[] array, solution = new int[1];
+            int[] alphabet = new int[26];
+            int[,] squareArray;
+            double fitness;
+            double bestFitness = -5;
+
+            for (int i = 0; i < Math.Pow(26, blocksize * blocksize); i++)
+            {
+                array = ConvertBaseN(i, 26, blocksize * blocksize);
+                squareArray = Convert1DArrayToSquareArray(array, blocksize);
+                matrix = new SquareMatrix(squareArray);
+
+
+                solution = HillCipherEncrypt(ciphertext, matrix, 'x');
+                fitness = TetragramFitness(solution, f);
+                if (fitness > bestFitness)
+                {
+                    if (matrix.IsInvertible())
+                    {
+                        bestMatrix = matrix;
+                        bestFitness = fitness;
+                    }
+
+                }
+            }
+            Console.WriteLine(bestFitness);
+            sk.key = bestMatrix;
+            sk.solution = HillCipherEncrypt(ciphertext,bestMatrix,'x');
+            return sk;
+        }
+
+
+        //--------------------------------------------------------------------------------------------------------------------------------------------
 
         //Key is taken to be number of columns of matrix
         static int[] ScytaleCipherEncrypt(int[] plaintext, int key, char nullCharacter)
@@ -648,6 +1145,7 @@ namespace Technical_Solution
             int[] plaintext = ScytaleCipherEncrypt(ciphertext, ciphertext.Length / key, 'x');
             return plaintext;
         }
+        //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static (int, bool) UpdateRailFenceRowNumber(int row, int key, bool increasing)
         {
@@ -727,6 +1225,7 @@ namespace Technical_Solution
 
             return plaintext;
         }
+        //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static int[] PermutationCipherEncrypt(int[] plaintext, int[] permutation, char nullCharacter)
         {
@@ -758,6 +1257,7 @@ namespace Technical_Solution
             }
             return plaintext;
         }
+        //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static int[] ColumnarTranspositionCipherEncrypt(int[] plaintext, int[] permutation, char nullCharacter)
         {
@@ -806,6 +1306,23 @@ namespace Technical_Solution
             return ioc;
         }
 
+        static int NormaliseIndexOfCoincidence(double fitness)
+        {
+            if (fitness < 0.9021)
+            {
+                return 0;
+            }
+            if (fitness > 1.7342)
+            {
+                return 100;
+            }
+            else
+            {
+                return (int) (120.178 * fitness - 108.412);
+
+            }
+        }
+
         static double[] LogFrequencies()
         {
             double[] frequencies = new double[26 * 26 * 26 * 26];
@@ -827,16 +1344,28 @@ namespace Technical_Solution
             return i;
         }
 
-        static double TetragramFitness(int[] ciphertext, double[] frequencies)
+        static double TetragramFitness(int[] text, double[] frequencies)
         {
             double fitness = 0;
             int[] subarray = new int[4];
-            for (int i = 0; i <= ciphertext.Length - 4; i++)
+            for (int i = 0; i <= text.Length - 4; i++)
             {
-                Array.Copy(ciphertext, i, subarray, 0, 4);
+                Array.Copy(text, i, subarray, 0, 4);
                 fitness += frequencies[TetragramIndex(subarray)];
             }
-            return fitness / (ciphertext.Length - 3);
+            return fitness / (text.Length - 3);
+        }
+
+        static int NormaliseTetragramFitness(double fitness)
+        {
+            if (fitness <= -4.75)
+            {
+                return (int) (19.048 * fitness + 190.48);
+            }
+            else
+            {
+                return 100;
+            }
         }
 
         static double MonogramFitness(int[] ciphertext)
@@ -859,6 +1388,11 @@ namespace Technical_Solution
             }
 
             return frequencies;
+        }
+
+        static int NormaliseMonogramFitness(double fitness)
+        {
+            return (int)(100 * fitness);
         }
 
         static void CipherIdentifier(int[] ciphertext)
@@ -972,17 +1506,26 @@ namespace Technical_Solution
 
         static void Main(string[] args)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+               
+
             double[] f = LogFrequencies();
 
+            string cS = "kjgrssqaymkytwkzioaomwdczpyremtwcftctxomfwcngbvwllkmauebavpwepyrcsokmiemrsytvkpkcauyuveleienmqxqaomqeskjgzvityyghcqpuafqzsqgegpoubygrsybuoujmkesmoighcqputvemeiocsalkteykgafsopbuygqepycrcwjsdomxuktrmrschoabposiuavscxwccefxwieumxursylzagfeqiefmuexwmkytiontsndykyillqbkmuimseqhqqdksqpuqwglumzjsapymrkgegalknvwiuwtlooauspexcaysybpqwdslzwavssxsvdqekudakfkygtstkouimacycikzmyivqqowgokfmuaqcgwcitkoocqiowaobvmxaouqksoqqesphaqpuwpsoekuxgcugygcuuazaodysqvumbqhwuawstiqz".ToLower();
 
-            string ciphertextString = "bzsynrefsaqybzsnkwanbzkngydbyjyqbjynsbzssansxsnbrkgsbzkqiymrhlswyxkhbzs".ToLower();
-            string cribString = "the";
-            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
+            int[] c = ConvertStringToIntegerArray(cS);
 
-            int[] crib = ConvertStringToIntegerArray(cribString);
-            SolKey<(int, int)> sk = AffineCipherBreak_Cribs(ciphertextString, cribString, f);
+
+            SolKey<SquareMatrix> sk =  HillCipherBreak_BruteForceV3(c, 3, f);
+
             Console.WriteLine(ConvertIntegerArrayToString(sk.solution));
-     
+            sk.key.PrintMatrix();
+
+
+
+            stopwatch.Stop();
+            Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
             Console.ReadKey();
 
         }
