@@ -323,7 +323,7 @@ namespace Technical_Solution
             int bestShift = 0;
 
             bestFitness = TetragramFitness(ciphertext, f);
-  
+
             for (int i = 1; i < 26; i++)
             {
                 solution = CaesarCipherDecrypt(ciphertext, i);
@@ -507,7 +507,7 @@ namespace Technical_Solution
 
                     solution = KeywordSubstitutionCipherDecrypt(ciphertext, word, mode);
                     fitness = TetragramFitness(solution, f);
-          
+
                     if (fitness > bestFitness)
                     {
                         bestSolution = solution;
@@ -563,9 +563,9 @@ namespace Technical_Solution
             return plaintext;
         }
 
-        static SolKey<(int,int)> AffineCipherBreak_BruteForce(string ciphertextString, double[] f)
+        static SolKey<(int, int)> AffineCipherBreak_BruteForce(string ciphertextString, double[] f)
         {
-            SolKey<(int,int)> sk;
+            SolKey<(int, int)> sk;
             int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
             int[] solution, bestSolution = new int[ciphertext.Length];
             double fitness, bestFitness;
@@ -585,7 +585,7 @@ namespace Technical_Solution
                     {
                         bestSolution = solution;
                         bestFitness = fitness;
-                        bestKey = (a,b);
+                        bestKey = (a, b);
                     }
                 }
             }
@@ -595,7 +595,7 @@ namespace Technical_Solution
             return sk;
         }
 
-        static (bool,int,int) CheckValidAffineCribPosition(int[] ciphertext, int[] crib, int i)
+        static (bool, int, int) CheckValidAffineCribPosition(int[] ciphertext, int[] crib, int i)
         {
             int j = 0, k = 0, x = 0, a = 0, b;
             bool validSubtraction = false;
@@ -631,7 +631,7 @@ namespace Technical_Solution
 
             if (!validSubtraction)
             {
-                return (false,0,0);
+                return (false, 0, 0);
             }
 
             a = mod(ModularInverses[x] * a);
@@ -639,22 +639,22 @@ namespace Technical_Solution
 
             if (Enumerable.SequenceEqual(AffineCipherEncrypt(crib, a, b), ciphertextSplit))
             {
-                return (true,a,b);
+                return (true, a, b);
             }
-            return (false,0,0);
+            return (false, 0, 0);
         }
 
 
-        static SolKey<(int,int)> AffineCipherBreak_Cribs(string ciphertextString, string cribString, double[] f)
+        static SolKey<(int, int)> AffineCipherBreak_Cribs(string ciphertextString, string cribString, double[] f)
         {
-            SolKey<(int,int)> sk;
+            SolKey<(int, int)> sk;
             int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
             int[] crib = ConvertStringToIntegerArray(cribString);
-            List<(int,int)> possibleKeys = new List<(int,int)>();
-            (bool,int,int) validPosition;
+            List<(int, int)> possibleKeys = new List<(int, int)>();
+            (bool, int, int) validPosition;
             int[] solution, bestSolution = new int[ciphertext.Length];
             double fitness, bestFitness;
-            (int,int) bestKey = (0,0);
+            (int, int) bestKey = (0, 0);
 
             for (int i = 0; i < ciphertext.Length - crib.Length; i++)
             {
@@ -662,9 +662,9 @@ namespace Technical_Solution
                 validPosition = CheckValidAffineCribPosition(ciphertext, crib, i);
                 if (validPosition.Item1 == true)
                 {
-                    possibleKeys.Add((validPosition.Item2,validPosition.Item3));
+                    possibleKeys.Add((validPosition.Item2, validPosition.Item3));
                 }
-       
+
             }
 
             if (possibleKeys.Count == 0)
@@ -674,9 +674,9 @@ namespace Technical_Solution
 
 
             bestFitness = TetragramFitness(ciphertext, f);
-      
 
-            foreach ((int,int) key in possibleKeys)
+
+            foreach ((int, int) key in possibleKeys)
             {
                 solution = AffineCipherDecrypt(ciphertext, key.Item1, key.Item2);
                 fitness = TetragramFitness(solution, f);
@@ -767,7 +767,7 @@ namespace Technical_Solution
                 if (averageIoC > 1.7)
                 {
                     return period;
-                }   
+                }
             }
             return 0;
         }
@@ -805,7 +805,7 @@ namespace Technical_Solution
             string ciphertextString = ConvertIntegerArrayToString(ciphertext);
             int[] crib = ConvertStringToIntegerArray(cribString);
             int n = 100;
-            
+
             //WHAT IF CRIB IS ON BOUNDARY?
             string key = VigenereBreak_CribSearching(ciphertext, ciphertextString, n, crib, cribString);
 
@@ -821,7 +821,7 @@ namespace Technical_Solution
             Console.Clear();
             int[] slice, sliceDecrypted;
             int i = 0, offset = 0;
-   
+
             bool exit = false;
 
             Console.WriteLine("Use the arrow keys to subtract the crib from different positions.");
@@ -869,9 +869,9 @@ namespace Technical_Solution
                     }
                 }
                 if (choice.Key == ConsoleKey.Enter)
-                { 
+                {
                     exit = true;
-                   
+
                 }
 
             } while (!exit);
@@ -897,7 +897,7 @@ namespace Technical_Solution
             double normalisedFitness;
             Dictionary<int[], double> dictionary = new Dictionary<int[], double>();
             List<KeyValuePair<int[], double>> orderedList;
-           
+
 
             for (int i = 0; i <= ciphertext.Length - crib.Length; i++)
             {
@@ -914,7 +914,7 @@ namespace Technical_Solution
             {
                 sliceString = ConvertIntegerArrayToString(orderedList[i].Key);
                 normalisedFitness = NormaliseTetragramFitness(orderedList[i].Value);
-                Console.WriteLine($"{i+1}: {sliceString} ({normalisedFitness})");
+                Console.WriteLine($"{i + 1}: {sliceString} ({normalisedFitness})");
             }
 
             Console.WriteLine("\nWhat do you believe to be the key?");
@@ -962,7 +962,7 @@ namespace Technical_Solution
                 }
 
             }
-            
+
             sk.key = ConvertIntegerArrayToString(keyArray);
             sk.solution = VigenereCipherDecrypt(ciphertext, sk.key);
             return sk;
@@ -987,7 +987,7 @@ namespace Technical_Solution
             return ciphertext;
 
         }
-    
+
         static int[] HillCipherDecrypt(int[] ciphertext, SquareMatrix matrix)
         {
             int[] plaintext = HillCipherEncrypt(ciphertext, matrix.Inverse(), 'x');
@@ -1039,9 +1039,10 @@ namespace Technical_Solution
             Console.WriteLine();
         }
 
-        static SolKey<SquareMatrix> HillCipherBreak_BruteForceV3(int[] ciphertext, int blocksize, double[] f)
+        static SolKey<SquareMatrix> HillCipherBreak_BruteForceV3(string ciphertextString, int blocksize, double[] f)
         {
             SolKey<SquareMatrix> sk;
+            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
             SquareMatrix matrix, bestMatrix = new SquareMatrix(1);
             int[] array, solution = new int[1];
             int[] alphabet = new int[26];
@@ -1074,9 +1075,10 @@ namespace Technical_Solution
             return sk;
         }
 
-        static SolKey<SquareMatrix> HillCipherBreak_BruteForceV2(int[] ciphertext, int blocksize, double[] f)
+        static SolKey<SquareMatrix> HillCipherBreak_BruteForceV2(string ciphertextString, int blocksize, double[] f)
         {
             SolKey<SquareMatrix> sk;
+            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
             SquareMatrix matrix, bestMatrix = new SquareMatrix(1);
             int[] array, solution = new int[1];
             int[] alphabet = new int[26];
@@ -1105,10 +1107,11 @@ namespace Technical_Solution
             }
             Console.WriteLine(bestFitness);
             sk.key = bestMatrix;
-            sk.solution = HillCipherEncrypt(ciphertext,bestMatrix,'x');
+            sk.solution = HillCipherEncrypt(ciphertext, bestMatrix, 'x');
             return sk;
         }
 
+        //To do: make crib breaker
 
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1145,6 +1148,39 @@ namespace Technical_Solution
             int[] plaintext = ScytaleCipherEncrypt(ciphertext, ciphertext.Length / key, 'x');
             return plaintext;
         }
+       
+        static SolKey<int> ScytaleCipherBreak_BruteForce(string ciphertextString, double[] f)
+        {
+            SolKey<int> sk;
+            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
+            int[] solution, bestSolution = new int[ciphertext.Length];
+            double fitness, bestFitness;
+            int bestShift = 0;
+            int maxKey = ciphertext.Length / 2;
+
+            bestFitness = TetragramFitness(ciphertext, f);
+
+            for (int i = 1; i < maxKey; i++)
+            {
+                solution = ScytaleCipherDecrypt(ciphertext, i);
+                Console.WriteLine(i);
+                Console.WriteLine(ConvertIntegerArrayToString(solution));
+                Console.ReadKey();
+                fitness = TetragramFitness(solution, f);
+                if (fitness > bestFitness)
+                {
+                    bestSolution = solution;
+                    bestFitness = fitness;
+                    bestShift = i;
+                }
+            }
+
+            sk.solution = bestSolution;
+            sk.key = bestShift;
+            return sk;
+        }
+        
+        
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static (int, bool) UpdateRailFenceRowNumber(int row, int key, bool increasing)
@@ -1225,6 +1261,41 @@ namespace Technical_Solution
 
             return plaintext;
         }
+       
+        static SolKey<(int,int)> RailFenceBreak_Decrypt(string ciphertextString, double[] f)
+        {
+            SolKey<(int,int)> sk;
+            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
+            int[] solution, bestSolution = new int[ciphertext.Length];
+            double fitness, bestFitness;
+            (int,int) bestKeyOffet =    ;
+            int maxKey = ciphertext.Length;
+            int maxOffset = maxKey * 2 - 2;
+
+            bestFitness = TetragramFitness(ciphertext, f);
+
+
+            for (int key = 1; key < maxKey; key++)
+            {
+                for (int offset = 0; offset < maxOffset; offset++)
+                {
+                    solution = RailFenceCipherDecrypt(ciphertext, key, offset);
+                    fitness = TetragramFitness(solution, f);
+                    if (fitness > bestFitness)
+                    {
+                        bestSolution = solution;
+                        bestFitness = fitness;
+                        bestShift = i;
+                    }
+                }
+            }
+
+            sk.solution = bestSolution;
+            sk.key = bestShift;
+            return sk;
+        }
+        
+        
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static int[] PermutationCipherEncrypt(int[] plaintext, int[] permutation, char nullCharacter)
@@ -1318,7 +1389,7 @@ namespace Technical_Solution
             }
             else
             {
-                return (int) (120.178 * fitness - 108.412);
+                return (int)(120.178 * fitness - 108.412);
 
             }
         }
@@ -1331,7 +1402,7 @@ namespace Technical_Solution
             {
                 for (int i = 0; i < 26 * 26 * 26 * 26; i++)
                 {
-                    frequencies[i] = br.ReadDouble();
+                    //frequencies[i] = br.ReadDouble();
                 }
             }
 
@@ -1360,7 +1431,7 @@ namespace Technical_Solution
         {
             if (fitness <= -4.75)
             {
-                return (int) (19.048 * fitness + 190.48);
+                return (int)(19.048 * fitness + 190.48);
             }
             else
             {
@@ -1508,20 +1579,21 @@ namespace Technical_Solution
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-               
+
 
             double[] f = LogFrequencies();
 
-            string cS = "kjgrssqaymkytwkzioaomwdczpyremtwcftctxomfwcngbvwllkmauebavpwepyrcsokmiemrsytvkpkcauyuveleienmqxqaomqeskjgzvityyghcqpuafqzsqgegpoubygrsybuoujmkesmoighcqputvemeiocsalkteykgafsopbuygqepycrcwjsdomxuktrmrschoabposiuavscxwccefxwieumxursylzagfeqiefmuexwmkytiontsndykyillqbkmuimseqhqqdksqpuqwglumzjsapymrkgegalknvwiuwtlooauspexcaysybpqwdslzwavssxsvdqekudakfkygtstkouimacycikzmyivqqowgokfmuaqcgwcitkoocqiowaobvmxaouqksoqqesphaqpuwpsoekuxgcugygcuuazaodysqvumbqhwuawstiqz".ToLower();
+            string cS = "OONEOLDOSHEHMOSNKDDNISMTADIPFHEEHIHFEEIRRSAHEMFINITEDFDEMRILORMTSEHAFLAAEMOROSOADINSYDNDWONMEARHSDEAYYWAKITLHMIBDCBTLIVENRFOOSRITLOETEDGOTRUHOVIESGHDWWURRREWIOTLSTAHHBAILANDNOIPHBAELNBIDBESCDIEOTNESLKAEDTOETSUSGDFEELLBHVOIITHRDOVBILYEEFFZHAERREATYABRFUEEPGEMRCTSREIALOLPOAEMKLLCDTNLFPERMDIAEIHDAYYTLNSSINNHGEINMTHEEAHNHDEHSNDOHESDMEHEICTIGSMIRSTSFILFOLNWEENELOAOSAHUYTAENCSYMWUBYELDOSMTOTAE".ToLower();
 
             int[] c = ConvertStringToIntegerArray(cS);
 
 
-            SolKey<SquareMatrix> sk =  HillCipherBreak_BruteForceV3(c, 3, f);
+            SolKey<int> sk = ScytaleCipherBreak_BruteForce(cS, f);
 
-            Console.WriteLine(ConvertIntegerArrayToString(sk.solution));
-            sk.key.PrintMatrix();
-
+            string xS = "TDFHEGATRAGOUOEWAYLDLIRHLTMWHNEAEETDLLAAAIDDDEDTFIOBPLTLTNPDHEFWUPKEEHEMOINEAREWWDESEWRCTNDAIABFSLNTEODERTSRELAUYNHENEHHUNENPYIIXDAASCFCOANMIOBNHETHNRESSNUDHAHOHDFETTCAENILISEEEHKLSDMYSOEMNEEOUAASSFTECSTNRLNEPBHDEIOGVLDTIOIHB";
+            int[] x = ConvertStringToIntegerArray(xS);
+            int[] y = ScytaleCipherEncrypt(x, 10, 'x');
+            Console.WriteLine(ConvertIntegerArrayToString(y));
 
 
             stopwatch.Stop();
