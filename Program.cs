@@ -140,6 +140,72 @@ namespace Technical_Solution
             return occurences;
         }
 
+        static int factorial(int n)
+        {
+            int x = 1;
+            for (int i = 1; i <= n; i++)
+            {
+                x *= i;
+            }
+            return x;
+        }
+
+        static int[][] HeapsAlgorithm(int[] array)
+        {
+            int n = array.Length;
+            int[][] permutations = new int[factorial(n)][];
+            permutations[0] = (int[])array.Clone();
+            int counter = 1;
+            int[] c = new int[n];
+            int temp;
+            for (int j = 0; j < n; j++)
+            {
+                c[j] = 0;
+            }
+
+            int i = 0;
+            while (i < n)
+            {
+                if (c[i] < i)
+                {
+                    if (i % 2 == 0)
+                    {
+                        temp = array[0];
+                        array[0] = array[i];
+                        array[i] = temp;
+                    }
+                    else
+                    {
+                        temp = array[c[i]];
+                        array[c[i]] = array[i];
+                        array[i] = temp;
+
+                    }
+                    permutations[counter] = (int[])array.Clone();
+                    counter += 1;
+                    c[i]++;
+                    i = 0;
+                }
+                if (c[i] == i)
+                {
+                    c[i] = 0;
+                    i++;
+                }
+            }
+            return permutations;
+
+        }
+
+        static int[][] HeapsAlgorithm(int length)
+        {
+            int[] array = new int[length];
+            for (int i = 0; i < length; i++)
+            {
+                array[i] = i;
+            }
+            return HeapsAlgorithm(array);
+        }
+
         static List<string> WordDictionary(string filename)
         {
             List<string> words = new List<string>();
@@ -293,6 +359,20 @@ namespace Technical_Solution
             return squareArray;
 
         }
+
+        static string CleanString(string input)
+        {
+            StringBuilder sb = new StringBuilder();
+            foreach (char c in input)
+            {
+                if (char.IsLetter(c))
+                    sb.Append(c);
+            }
+            input = sb.ToString();
+            input = String.Concat(input.Where(c => !Char.IsWhiteSpace(c)));
+            return input.ToLower();
+        }
+
 
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1148,7 +1228,7 @@ namespace Technical_Solution
             int[] plaintext = ScytaleCipherEncrypt(ciphertext, ciphertext.Length / key, 'x');
             return plaintext;
         }
-       
+
         static SolKey<int> ScytaleCipherBreak_BruteForce(string ciphertextString, double[] f)
         {
             SolKey<int> sk;
@@ -1163,9 +1243,6 @@ namespace Technical_Solution
             for (int i = 1; i < maxKey; i++)
             {
                 solution = ScytaleCipherDecrypt(ciphertext, i);
-                Console.WriteLine(i);
-                Console.WriteLine(ConvertIntegerArrayToString(solution));
-                Console.ReadKey();
                 fitness = TetragramFitness(solution, f);
                 if (fitness > bestFitness)
                 {
@@ -1179,8 +1256,8 @@ namespace Technical_Solution
             sk.key = bestShift;
             return sk;
         }
-        
-        
+
+
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static (int, bool) UpdateRailFenceRowNumber(int row, int key, bool increasing)
@@ -1261,41 +1338,47 @@ namespace Technical_Solution
 
             return plaintext;
         }
-       
-        static SolKey<(int,int)> RailFenceBreak_Decrypt(string ciphertextString, double[] f)
+
+        static SolKey<(int, int)> RailFenceBreak_BruteForce(string ciphertextString, double[] f)
         {
-            SolKey<(int,int)> sk;
+            SolKey<(int, int)> sk;
             int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
             int[] solution, bestSolution = new int[ciphertext.Length];
             double fitness, bestFitness;
-            (int,int) bestKeyOffet =    ;
+            (int, int) bestKeyOffet = (-1,-1);
             int maxKey = ciphertext.Length;
-            int maxOffset = maxKey * 2 - 2;
+            int maxOffset;
 
             bestFitness = TetragramFitness(ciphertext, f);
 
-
             for (int key = 1; key < maxKey; key++)
             {
+                maxOffset = 2 * key - 2;
                 for (int offset = 0; offset < maxOffset; offset++)
                 {
                     solution = RailFenceCipherDecrypt(ciphertext, key, offset);
                     fitness = TetragramFitness(solution, f);
                     if (fitness > bestFitness)
                     {
+                        if (NormaliseTetragramFitness(fitness) == 100)
+                        {
+                            sk.solution = solution;
+                            sk.key = (key, offset);
+                            return sk;
+                        }
                         bestSolution = solution;
                         bestFitness = fitness;
-                        bestShift = i;
+                        bestKeyOffet = (key, offset);
                     }
                 }
             }
 
             sk.solution = bestSolution;
-            sk.key = bestShift;
+            sk.key = bestKeyOffet;
             return sk;
         }
-        
-        
+
+
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static int[] PermutationCipherEncrypt(int[] plaintext, int[] permutation, char nullCharacter)
@@ -1328,6 +1411,46 @@ namespace Technical_Solution
             }
             return plaintext;
         }
+
+        static SolKey<int[]> PermutationCipherBreak_BruteForce(string ciphertextString, double[] f)
+        {
+            SolKey<int[]> sk;
+            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
+            int[][] permutations;
+            int[] solution, bestSolution = new int[ciphertext.Length];
+            double fitness, bestFitness;
+            int[] bestPerm = new int[0];
+            int maxKeyLength = 9;
+            int keyLength = 1;
+            bool acceptablyHighFitness = false;
+
+            bestFitness = TetragramFitness(ciphertext, f);
+
+            while (!acceptablyHighFitness && keyLength <= maxKeyLength)
+            {
+                permutations = HeapsAlgorithm(keyLength);
+                foreach (int[] perm in permutations)
+                {
+                    solution = PermutationCipherDecrypt(ciphertext, perm);
+                    fitness = TetragramFitness(solution, f);
+                    if (fitness > bestFitness)
+                    {
+                        bestSolution = solution;
+                        bestPerm = perm;
+                        bestFitness = fitness;
+                        if (NormaliseTetragramFitness(fitness) == 100)
+                        {
+                            acceptablyHighFitness = true;
+                        }           
+                    }
+                }
+                keyLength += 1;
+            }
+            
+            sk.solution = bestSolution;
+            sk.key = bestPerm;
+            return sk;
+        }
         //--------------------------------------------------------------------------------------------------------------------------------------------
 
         static int[] ColumnarTranspositionCipherEncrypt(int[] plaintext, int[] permutation, char nullCharacter)
@@ -1359,6 +1482,46 @@ namespace Technical_Solution
                 }
             }
             return plaintext;
+        }
+
+        static SolKey<int[]> ColumnarTranspositionCipherBreak_BruteForce(string ciphertextString, double[] f)
+        {
+            SolKey<int[]> sk;
+            int[] ciphertext = ConvertStringToIntegerArray(ciphertextString);
+            int[][] permutations;
+            int[] solution, bestSolution = new int[ciphertext.Length];
+            double fitness, bestFitness;
+            int[] bestPerm = new int[0];
+            int maxKeyLength = 9;
+            int keyLength = 1;
+            bool acceptablyHighFitness = false;
+
+            bestFitness = TetragramFitness(ciphertext, f);
+
+            while (!acceptablyHighFitness && keyLength <= maxKeyLength)
+            {
+                permutations = HeapsAlgorithm(keyLength);
+                foreach (int[] perm in permutations)
+                {
+                    solution = ColumnarTranspositionCipherDecrypt(ciphertext, perm);
+                    fitness = TetragramFitness(solution, f);
+                    if (fitness > bestFitness)
+                    {
+                        bestSolution = solution;
+                        bestPerm = perm;
+                        bestFitness = fitness;
+                        if (NormaliseTetragramFitness(fitness) == 100)
+                        {
+                            acceptablyHighFitness = true;
+                        }
+                    }
+                }
+                keyLength += 1;
+            }
+
+            sk.solution = bestSolution;
+            sk.key = bestPerm;
+            return sk;
         }
 
         //--------------------------------------------------------------------------------------------------------------------------------------------
@@ -1402,7 +1565,7 @@ namespace Technical_Solution
             {
                 for (int i = 0; i < 26 * 26 * 26 * 26; i++)
                 {
-                    //frequencies[i] = br.ReadDouble();
+                    frequencies[i] = br.ReadDouble();
                 }
             }
 
@@ -1580,22 +1743,16 @@ namespace Technical_Solution
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-
             double[] f = LogFrequencies();
 
-            string cS = "OONEOLDOSHEHMOSNKDDNISMTADIPFHEEHIHFEEIRRSAHEMFINITEDFDEMRILORMTSEHAFLAAEMOROSOADINSYDNDWONMEARHSDEAYYWAKITLHMIBDCBTLIVENRFOOSRITLOETEDGOTRUHOVIESGHDWWURRREWIOTLSTAHHBAILANDNOIPHBAELNBIDBESCDIEOTNESLKAEDTOETSUSGDFEELLBHVOIITHRDOVBILYEEFFZHAERREATYABRFUEEPGEMRCTSREIALOLPOAEMKLLCDTNLFPERMDIAEIHDAYYTLNSSINNHGEINMTHEEAHNHDEHSNDOHESDMEHEICTIGSMIRSTSFILFOLNWEENELOAOSAHUYTAENCSYMWUBYELDOSMTOTAE".ToLower();
 
+            string cS = CleanString(File.ReadAllText("ciphertext.txt"));
             int[] c = ConvertStringToIntegerArray(cS);
+            SolKey<int[]> sk = ColumnarTranspositionCipherBreak_BruteForce(cS, f);
 
-
-            SolKey<int> sk = ScytaleCipherBreak_BruteForce(cS, f);
-
-            string xS = "TDFHEGATRAGOUOEWAYLDLIRHLTMWHNEAEETDLLAAAIDDDEDTFIOBPLTLTNPDHEFWUPKEEHEMOINEAREWWDESEWRCTNDAIABFSLNTEODERTSRELAUYNHENEHHUNENPYIIXDAASCFCOANMIOBNHETHNRESSNUDHAHOHDFETTCAENILISEEEHKLSDMYSOEMNEEOUAASSFTECSTNRLNEPBHDEIOGVLDTIOIHB";
-            int[] x = ConvertStringToIntegerArray(xS);
-            int[] y = ScytaleCipherEncrypt(x, 10, 'x');
-            Console.WriteLine(ConvertIntegerArrayToString(y));
-
-
+            string p = ConvertIntegerArrayToString(sk.solution);
+            Console.WriteLine(p);
+            PrintArray<int>(sk.key);
             stopwatch.Stop();
             Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} ms");
             Console.ReadKey();
