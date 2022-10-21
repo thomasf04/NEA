@@ -1,0 +1,91 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ClassesTest
+{
+    internal class Program
+    {
+        static void Main(string[] args)
+        {
+        }
+    }
+}
+--------------------------------------------------------------------------------
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ClassesTest
+{
+    public abstract class Cipher
+    {
+        private BreakMethod breakMethod;
+
+        public int[] Break()
+        {
+            return breakMethod.Break();
+        }
+        public abstract int[] Encrypt();
+
+        public abstract int[] Decrypt();
+    }
+    
+    
+    --------------------------------------------------------------------------------
+    
+ using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ClassesTest
+{
+    public class CaesarCipher : Cipher
+    {
+        public override int[] Decrypt()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int[] Encrypt()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+}
+
+--------------------------------------------------------------------------------
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ClassesTest
+{
+    public class CaesarCipher : Cipher
+    {
+        public override int[] Decrypt()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override int[] Encrypt()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+}
+
+   
+}
