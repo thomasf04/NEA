@@ -1,0 +1,173 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+namespace Technical_Solution
+{
+    //Mode 1 adds letters alphabetically after last letter of keyword e.g. keywordabcfg...
+    //Mode 2 adds letters alphabetically starting with last letter of key word e.g. keywordefghi...
+    public enum KeywordSubstitutionModes
+    {
+       One,
+       Two
+    }
+
+    public class Keyword_Substitution_Cipher : Cipher<(string,KeywordSubstitutionModes)>
+    {
+        private KeywordSubstitutionModes mode;
+
+        public Keyword_Substitution_Cipher()
+        {
+            mode = KeywordSubstitutionModes.One;
+        }
+
+        public Keyword_Substitution_Cipher(KeywordSubstitutionModes mode)
+        {
+            this.mode = mode;
+        }
+
+        public void SetMode(KeywordSubstitutionModes mode)
+        {
+            this.mode = mode;
+        }
+
+        public int[] Encrypt(int[] plaintext, string keyword)
+        {
+            return Encrypt(plaintext, (keyword, mode));
+        }
+
+        public override int[] Encrypt(int[] plaintext, (string,KeywordSubstitutionModes) keyAndMode)
+        {
+            string keyword = keyAndMode.Item1;
+            KeywordSubstitutionModes mode = keyAndMode.Item2;
+            int[] ciphertext = new int[plaintext.Length];
+            int[] keyAlphabet = new int[26];
+            keyAlphabet = KS_Alphabet(keyword, mode);
+
+            for (int i = 0; i < plaintext.Length; i++)
+            {
+                ciphertext[i] = keyAlphabet[plaintext[i]];
+            }
+
+            return ciphertext;
+        }
+
+
+        public int[] Decrypt(int[] ciphertext, string keyword)
+        {
+            return Decrypt(ciphertext, (keyword, mode));
+        }
+
+        public override int[] Decrypt(int[] ciphertext, (string,KeywordSubstitutionModes) keyAndMode)
+        {
+            string keyword = keyAndMode.Item1;
+            KeywordSubstitutionModes mode = keyAndMode.Item2;
+            int[] plaintext = new int[ciphertext.Length];
+            int[] keyAlphabetInverse = new int[26];
+            int[] keyAlphabet = new int[26];
+
+            keyAlphabetInverse = KS_Alphabet(keyword, mode);
+            for (int i = 0; i < 26; i++)
+            {
+                keyAlphabet[keyAlphabetInverse[i]] = i;
+            }
+
+            for (int i = 0; i < ciphertext.Length; i++)
+            {
+                plaintext[i] = keyAlphabet[ciphertext[i]];
+            }
+
+            return plaintext;
+        }
+
+        private int[] KS_Alphabet(string keyword, KeywordSubstitutionModes mode)
+        {
+            List<int> lettersAvailable = new List<int>();
+            int[] keyAlphabet = new int[26];
+            int lastLetter, currentLetter;
+
+            for (int i = 0; i < 26; i++)
+            {
+                lettersAvailable.Add(i);
+            }
+
+            int[] keywordNoDuplicates = Program.ConvertStringToIntegerArray(keyword).Distinct().ToArray();
+
+            for (int i = 0; i < keywordNoDuplicates.Length; i++)
+            {
+                keyAlphabet[i] = keywordNoDuplicates[i];
+                lettersAvailable.Remove(keywordNoDuplicates[i]);
+            }
+
+
+            if (mode == KeywordSubstitutionModes.One)
+            {
+                for (int i = keywordNoDuplicates.Length; i < 26; i++)
+                {
+                    keyAlphabet[i] = lettersAvailable[i - keywordNoDuplicates.Length];
+                }
+            }
+
+            if (mode == KeywordSubstitutionModes.Two)
+            {
+                lastLetter = keywordNoDuplicates[keywordNoDuplicates.Length - 1];
+                currentLetter = (lastLetter + 1) % 26;
+                for (int i = keywordNoDuplicates.Length; i < 26; i++)
+                {
+
+                    while (!lettersAvailable.Contains(currentLetter))
+                    {
+                        currentLetter = (currentLetter + 1) % 26;
+                    }
+                    keyAlphabet[i] = currentLetter;
+                    lettersAvailable.Remove(currentLetter);
+                }
+            }
+            return keyAlphabet;
+        }
+    }
+
+
+
+    public class KS_Dictionary : BreakMethod<(string,KeywordSubstitutionModes)>
+    {
+        public KS_Dictionary(Cipher<(string, KeywordSubstitutionModes)> cipher) : base(cipher) { }
+
+
+        public override SolKey<(string, KeywordSubstitutionModes)> Break(int[] ciphertext)
+        {
+            SolKey<(string,KeywordSubstitutionModes)> sk;
+            List<string> words = Program.WordDictionary("words.txt");
+            KeywordSubstitutionModes[] modes = { KeywordSubstitutionModes.One, KeywordSubstitutionModes.Two };
+            int[] solution, bestSolution = new int[ciphertext.Length];
+            double fitness, bestFitness;
+            string bestWord = "";
+            KeywordSubstitutionModes bestMode = KeywordSubstitutionModes.One;
+
+
+            bestFitness = Program.TetragramFitness(ciphertext);
+            foreach (KeywordSubstitutionModes mode in modes)
+            {
+                foreach (string word in words)
+                {
+                    solution = cipher.Decrypt(ciphertext, (word, mode));
+
+                    fitness = Program.TetragramFitness(solution);
+
+                    if (fitness > bestFitness)
+                    {
+                        bestSolution = solution;
+                        bestFitness = fitness;
+                        bestWord = word;
+                        bestMode = mode;
+                    }
+                }
+            }
+
+            sk.solution = bestSolution;
+            sk.key = (bestWord,bestMode);
+            return sk;
+        }
+
+    }
+
+}
